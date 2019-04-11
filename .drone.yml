@@ -1,0 +1,89 @@
+kind: pipeline
+name: default
+
+workspace:
+  base: /go
+  path: src/github.com/oliver006/drone-cloud-run
+
+steps:
+  - name: test
+    image: "golang:1"
+    environment:
+      COVERALLS_TOKEN:
+        from_secret: coveralls-token
+    commands:
+      - 'echo " ! gofmt -d *.go 2>&1 | read " | bash'
+      - 'go vet ./...'
+      - "go build"
+      - "go test -v -covermode=atomic -cover -race -coverprofile=coverage.txt"
+      - "go get github.com/mattn/goveralls"
+      - "/go/bin/goveralls -v -coverprofile=coverage.txt -service=drone.io"
+    when:
+      event:
+        - push
+
+
+  - name: docker-update-tst-image
+    image: plugins/docker
+    settings:
+      username: _json_key
+      password:
+        from_secret: google_credentials
+      repo: gcr.io/phone-21zoo-com/drone-cloud-run-test
+      registry: gcr.io
+      tags: latest
+      dockerfile: tst/Dockerfile
+    when:
+      branch:
+        - master
+      event:
+        - push
+
+
+  - name: build-and-publish-latest
+    image: plugins/docker
+    settings:
+      repo: oliver006/drone-cloud-run
+      tags: latest
+      debug: true
+      build_args:
+        - 'TAG=master'
+        - 'SHA1=${DRONE_COMMIT_SHA}'
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      branch:
+        - master
+      event:
+        - push
+
+
+  - name: sleep-10s
+    image: alpine
+    commands:
+      - sleep 10
+    when:
+      event:
+        - push
+
+
+  - name: deploy-using-new-drone-plugin-version
+    image: oliver006/drone-cloud-run:latest
+    pull: always
+    settings:
+      action: deploy
+      service: test-drone-cloud-run-master
+      image: gcr.io/phone-21zoo-com/drone-cloud-run-test:latest
+      memory: 128Mi
+      region: us-central1
+      allow_unauthenticated: true
+      environment:
+        var_1: "var01"
+        var_2:
+          from_secret: secret_var
+        version: "${DRONE_COMMIT_SHA}"
+      token:
+        from_secret: google_credentials
+

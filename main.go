@@ -86,7 +86,11 @@ func parseConfig() (*Config, error) {
 		return nil, fmt.Errorf("Missing service name")
 	}
 	if cfg.ImageName == "" {
-		return nil, fmt.Errorf("Missing image name")
+		// for Drone v0.8 compat. as 'image' clashes since settings are passed top-level
+		cfg.ImageName = os.Getenv("PLUGIN_DEPLOYMENT_IMAGE")
+		if cfg.ImageName == "" {
+			return nil, fmt.Errorf("Missing image/deployment_image name")
+		}
 	}
 
 	if cfg.Token == "" {

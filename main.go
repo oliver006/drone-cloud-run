@@ -125,6 +125,9 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		args = append(args, "--image", cfg.ImageName)
 		args = append(args, "--project", cfg.Project)
 
+		// todo: make this configurable
+		args = append(args, "--platform", "managed")
+
 		if len(cfg.EnvSecrets) > 0 || len(cfg.Environment) > 0 {
 			e := make([]string, len(cfg.EnvSecrets))
 			copy(e, cfg.EnvSecrets)

@@ -34,6 +34,11 @@ const (
 	TmpTokenFileLocation = "/tmp/token.json"
 )
 
+// using a var instead of const so tests can override this
+var (
+	GCloudCommand = "gcloud"
+)
+
 var (
 	// populated by "go build"
 	BuildDate string
@@ -121,7 +126,6 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		"beta",
 		"run",
 	}
-
 	switch cfg.Action {
 	case "deploy":
 		args = append(args, "deploy")
@@ -170,7 +174,7 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 }
 
 func ExecutePlan(e *Env, plan []string) error {
-	if err := e.Run("gcloud", plan...); err != nil {
+	if err := e.Run(GCloudCommand, plan...); err != nil {
 		return fmt.Errorf("error: %s\n", err)
 	}
 
@@ -185,9 +189,9 @@ func runConfig(cfg *Config) error {
 
 	e := NewEnv(cfg.Dir, os.Environ(), os.Stdout, os.Stderr, false)
 
-	e.Run("gcloud", "version")
+	e.Run(GCloudCommand, "version")
 
-	if err := e.Run("gcloud", "auth", "activate-service-account", "--key-file", TmpTokenFileLocation); err != nil {
+	if err := e.Run(GCloudCommand, "auth", "activate-service-account", "--key-file", TmpTokenFileLocation); err != nil {
 		return err
 	}
 

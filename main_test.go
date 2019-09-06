@@ -77,6 +77,7 @@ func TestParseConfig(t *testing.T) {
 		expectedToBeOk     bool
 		expectedProjectId  string
 		expectedEnvSecrets []string
+		expectedEnvKeys    []string
 	}{
 		{
 			expectedToBeOk:    true,
@@ -88,6 +89,12 @@ func TestParseConfig(t *testing.T) {
 			Env:                map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENV_SECRET_API_KEY": "secret", "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
 			expectedProjectId:  "my-project-id",
 			expectedEnvSecrets: []string{"API_KEY=secret"},
+		},
+		{
+			expectedToBeOk:    true,
+			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENVIRONMENT": `{"var_1":"var01","version":"d0c13cb8646875cf94387f0d3de4e92b85eee3b0"}`, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			expectedProjectId: "my-project-id",
+			expectedEnvKeys:   []string{"VAR_1=var01", "VERSION=d0c13cb8646875cf94387f0d3de4e92b85eee3b0"},
 		},
 
 		// use PLUGIN_DEPLOYMENT_IMAGE instead of PLUGIN_IMAGE, old drone :/

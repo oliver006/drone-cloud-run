@@ -28,6 +28,9 @@ steps:
       allow_unauthenticated: true
       token:
         from_secret: google_credentials
+      environment:
+        VAR_1: "var01"
+        ANOTHER_ENV_VAR: "env_var_value"
       env_secret_api_key:
         from_secret: api_key_prod
 ```
@@ -56,3 +59,4 @@ steps:
         target: env_secret_api_key
 
 ```
+

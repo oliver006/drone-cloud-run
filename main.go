@@ -26,7 +26,7 @@ type Config struct {
 	Concurrency          string
 	Memory               string
 	Timeout              string
-	Environment          []map[string]string
+	Environment          map[string]string
 	EnvSecrets           []string
 }
 
@@ -68,7 +68,11 @@ func parseConfig() (*Config, error) {
 		Timeout:              os.Getenv("PLUGIN_TIMEOUT"),
 	}
 
-	json.Unmarshal([]byte(os.Getenv("PLUGIN_ENVIRONMENT")), &cfg.Environment)
+	envStr := os.Getenv("PLUGIN_ENVIRONMENT")
+	if err := json.Unmarshal([]byte(envStr), &cfg.Environment); err != nil && envStr != "" {
+		log.Printf("json.Unmarshal() err: %s", err)
+		log.Printf("os.Getenv(PLUGIN_ENVIRONMENT): %s", envStr)
+	}
 
 	PluginEnvSecretPrefix := "PLUGIN_ENV_SECRET_"
 	for _, e := range os.Environ() {
@@ -131,7 +135,7 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		if len(cfg.EnvSecrets) > 0 || len(cfg.Environment) > 0 {
 			e := make([]string, len(cfg.EnvSecrets))
 			copy(e, cfg.EnvSecrets)
-			for k, v := range cfg.Environment[0] {
+			for k, v := range cfg.Environment {
 				e = append(e, fmt.Sprintf(`%s=%s`, k, v))
 			}
 

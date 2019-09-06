@@ -1,11 +1,6 @@
-[![Build Status](https://cloud.drone.io/api/badges/oliver006/drone-cloud-run/status.svg)](https://cloud.drone.io/oliver006/drone-cloud-run) [![Coverage Status](https://coveralls.io/repos/github/oliver006/drone-cloud-run/badge.svg?branch=master)](https://coveralls.io/github/oliver006/drone-cloud-run?branch=master)
+[![Build Status](https://cloud.drone.io/api/badges/oliver006/drone-cloud-run/status.svg)](https://cloud.drone.io/oliver006/drone-cloud-run) [![Coverage Status](https://coveralls.io/repos/github/oliver006/drone-cloud-run/badge.svg)](https://coveralls.io/github/oliver006/drone-cloud-run)
 
-## drone-cloud-run - a Drone.io plugin to deploy images to Google Run
-
-
-
-
-
+## drone-cloud-run - A drone.io plugin to deploy Google Cloud Run containers. 
 
 
 ### Usage

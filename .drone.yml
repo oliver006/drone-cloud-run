@@ -6,8 +6,8 @@ workspace:
   path: src/github.com/oliver006/drone-cloud-run
 
 steps:
-  - name: test
-    image: "golang:1"
+  - name: tests
+    image: "golang:1.13"
     environment:
       COVERALLS_TOKEN:
         from_secret: coveralls-token
@@ -21,9 +21,10 @@ steps:
     when:
       event:
         - push
+        - pull_request
 
 
-  - name: docker-update-tst-image
+  - name: update-dummy-docker-tst-image
     image: plugins/docker
     settings:
       username: _json_key
@@ -40,14 +41,14 @@ steps:
         - push
 
 
-  - name: build-and-publish-latest
+  - name: build-and-publish-new-drone-image-for-test
     image: plugins/docker
     settings:
       repo: oliver006/drone-cloud-run
-      tags: latest
+      tags: test
       debug: true
       build_args:
-        - 'TAG=master'
+        - 'TAG=test'
         - 'SHA1=${DRONE_COMMIT_SHA}'
       username:
         from_secret: docker_username
@@ -65,12 +66,14 @@ steps:
     commands:
       - sleep 10
     when:
+      branch:
+        - master
       event:
         - push
 
 
-  - name: deploy-using-new-drone-plugin-version
-    image: oliver006/drone-cloud-run:latest
+  - name: deploy-using-new-test-drone-image
+    image: oliver006/drone-cloud-run:test
     pull: always
     settings:
       action: deploy
@@ -80,10 +83,30 @@ steps:
       region: us-central1
       allow_unauthenticated: true
       environment:
-        var_1: "var01"
-        var_2:
-          from_secret: secret_var
-        version: "${DRONE_COMMIT_SHA}"
+        VAR_1: "var01"
+        VERSION: "${DRONE_COMMIT_SHA}"
       token:
         from_secret: google_credentials
+    when:
+      branch:
+        - master
+      event:
+        - push
 
+
+  - name: on-tag-build-and-publish-new-drone-image
+    image: plugins/docker
+    settings:
+      repo: oliver006/drone-cloud-run
+      tags: "latest,${DRONE_TAG}"
+      debug: true
+      build_args:
+        - 'TAG=${DRONE_TAG}'
+        - 'SHA1=${DRONE_COMMIT_SHA}'
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      event:
+        - tag

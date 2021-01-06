@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -32,9 +33,6 @@ var (
 `
 )
 
-func TestNope(t *testing.T) {
-}
-
 func TestEnvironRun(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
@@ -54,7 +52,19 @@ func TestEnvironRun(t *testing.T) {
 
 	if err := e.Run("/usr/bin/env"); err == nil {
 		if strings.Index(stdout.String(), "ABC=123") == -1 {
-			t.Errorf("didn't find ABC in Env, got: %s", stdout.String())
+			t.Errorf("didn't find ABC in env, got: %s", stdout.String())
+		}
+	} else {
+		t.Errorf("got err: %s", err)
+	}
+
+	stdout = &bytes.Buffer{}
+	stderr = &bytes.Buffer{}
+
+	e.dryRun = true
+	if err := e.Run("/bin/echo", "sup"); err == nil {
+		if strings.Contains(stdout.String(), "sup") {
+			t.Errorf("got stdout : %s", stdout.String())
 		}
 	} else {
 		t.Errorf("got err: %s", err)
@@ -71,113 +81,197 @@ func TestGetProjectFromToken(t *testing.T) {
 	}
 }
 
-func TestParseConfig(t *testing.T) {
+func TestParseAndRunConfig(t *testing.T) {
 	for _, tst := range []struct {
-		Env                map[string]string
-		expectedToBeOk     bool
-		expectedProjectId  string
-		expectedEnvSecrets []string
+		env                   map[string]string
+		cfgExpectedOk         bool
+		cfgExpectedProjectId  string
+		cfgExpectedEnvSecrets []string
+		cfgExpectedEnvKeys    []string
+		planExpectedOk        bool
 	}{
 		{
-			expectedToBeOk:    true,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        true,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedOk:       true,
 		},
 		{
-			expectedToBeOk:     true,
-			Env:                map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENV_SECRET_API_KEY": "secret", "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
-			expectedProjectId:  "my-project-id",
-			expectedEnvSecrets: []string{"API_KEY=secret"},
+			cfgExpectedOk:         true,
+			env:                   map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENV_SECRET_API_KEY": "secret", "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId:  "my-project-id",
+			cfgExpectedEnvSecrets: []string{"API_KEY=secret"},
+			planExpectedOk:        true,
+		},
+		{
+			cfgExpectedOk:        true,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENVIRONMENT": `{"var_1":"var01","version":"d0c13cb8646875cf94387f0d3de4e92b85eee3b0"}`, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+			cfgExpectedEnvKeys:   []string{"VAR_1=var01", "VERSION=d0c13cb8646875cf94387f0d3de4e92b85eee3b0"},
+			planExpectedOk:       true,
+		},
+
+		{
+			cfgExpectedOk:        true,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENVIRONMENT": `    `, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+			cfgExpectedEnvKeys:   []string{"VAR_1=var01", "VERSION=d0c13cb8646875cf94387f0d3de4e92b85eee3b0"},
+			planExpectedOk:       true,
+		},
+
+		// test all the options to see if a proper execution plan is being created
+		{
+			cfgExpectedOk: true,
+			env: map[string]string{
+				"PLUGIN_ACTION":                "deploy",
+				"PLUGIN_TOKEN":                 validGCPKey,
+				"PLUGIN_SERVICE":               "my-service",
+				"PLUGIN_IMAGE":                 "my-image",
+				"PLUGIN_ALLOW_UNAUTHENTICATED": "true",
+				"PLUGIN_CONCURRENCY":           "80",
+				"PLUGIN_MEMORY":                "128Mi",
+				"PLUGIN_TIMEOUT":               "10s",
+				"PLUGIN_REGION":                "us-central1",
+			},
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedOk:       true,
+		},
+
+		// parses ok but action is unknown
+		{
+			cfgExpectedOk:        true,
+			env:                  map[string]string{"PLUGIN_ACTION": "unknown-action", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedOk:       false,
 		},
 
 		// use PLUGIN_DEPLOYMENT_IMAGE instead of PLUGIN_IMAGE, old drone :/
 		{
-			expectedToBeOk:    true,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service", "PLUGIN_DEPLOYMENT_IMAGE": "my-image"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        true,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service", "PLUGIN_DEPLOYMENT_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedOk:       true,
 		},
 
 		// use TOKEN instead of PLUGIN_TOKEN, old drone :-/
 		{
-			expectedToBeOk:    true,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        true,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedOk:       true,
 		},
 
+		// everything but TOKEN
 		{
-			expectedToBeOk:    false,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_IMAGE": "my-image"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+		},
+
+		// everything but project
+		{
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": "token", "PLUGIN_SERVICE": "my-service", "PLUGIN_DEPLOYMENT_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
 		},
 		{
-			expectedToBeOk:    false,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
 		},
 		{
-			expectedToBeOk:    false,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": "abcd", "PLUGIN_SERVICE": "my-service"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service"},
+			cfgExpectedProjectId: "my-project-id",
 		},
 		{
-			expectedToBeOk:    false,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "TOKEN": "", "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": "abcd", "PLUGIN_SERVICE": "my-service"},
+			cfgExpectedProjectId: "my-project-id",
 		},
 		{
-			expectedToBeOk:    false,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "TOKEN": "abcde", "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "TOKEN": "", "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
 		},
 		{
-			expectedToBeOk:    false,
-			Env:               map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "TOKEN": "abcde", "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
 		},
 		{
-			expectedToBeOk:    false,
-			Env:               map[string]string{"PLUGIN_ACTION": "", "PLUGIN_SERVICE": "my-service"},
-			expectedProjectId: "my-project-id",
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service"},
+			cfgExpectedProjectId: "my-project-id",
+		},
+		{
+			cfgExpectedOk:        false,
+			env:                  map[string]string{"PLUGIN_ACTION": "", "PLUGIN_SERVICE": "my-service"},
+			cfgExpectedProjectId: "my-project-id",
 		},
 	} {
-		os.Clearenv()
+		name := fmt.Sprintf("env:[%s]", tst.env)
+		t.Run(name, func(t *testing.T) {
 
-		for k, v := range tst.Env {
-			os.Setenv(k, v)
-		}
+			os.Clearenv()
 
-		cfg, err := parseConfig()
-		if err != nil && tst.expectedToBeOk == true {
-			t.Errorf("parseConfig(  %#v  ) failed, err: %s", tst, err)
-			return
-		}
-		if err == nil && tst.expectedToBeOk == false {
-			t.Errorf("parseConfig(  %#v  ) should have failed", tst)
-			return
-		}
-		if !tst.expectedToBeOk {
-			continue
-		}
+			for k, v := range tst.env {
+				os.Setenv(k, v)
+			}
 
-		if cfg.Project != tst.expectedProjectId {
-			t.Errorf("expected projectID: %s   got: %s", tst.expectedProjectId, cfg.Project)
-		}
+			cfg, err := parseConfig()
+			if err != nil && tst.cfgExpectedOk == true {
+				t.Errorf("parseConfig(  %#v  ) failed, err: %s", tst, err)
+				return
+			}
+			if err == nil && tst.cfgExpectedOk == false {
+				t.Errorf("parseConfig(  %#v  ) should have failed", tst)
+				return
+			}
+			if !tst.cfgExpectedOk {
+				return
+			}
 
-		if cfg.Token == "" {
-			t.Errorf("expected a token, got nothing, tst: %#v", tst)
-		}
+			if cfg.Project != tst.cfgExpectedProjectId {
+				t.Errorf("expected projectID: %s   got: %s", tst.cfgExpectedProjectId, cfg.Project)
+			}
 
-		for _, e := range tst.expectedEnvSecrets {
-			found := false
-			for _, s := range cfg.EnvSecrets {
-				if s == e {
-					found = true
-					break
+			if cfg.Token == "" {
+				t.Errorf("expected a token, got nothing, tst: %#v", tst)
+			}
+
+			for _, e := range tst.cfgExpectedEnvSecrets {
+				found := false
+				for _, s := range cfg.EnvSecrets {
+					if s == e {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("missing env secret: %s, got: %#v", e, cfg.EnvSecrets)
 				}
 			}
-			if !found {
-				t.Errorf("missing env secret: %s, got: %#v", e, cfg.EnvSecrets)
+
+			if !tst.cfgExpectedOk {
+				return
 			}
-		}
+
+			plan, err := CreateExecutionPlan(cfg)
+			if err != nil && tst.planExpectedOk {
+				t.Fatalf("plan was expected to be ok, got err: %s", err)
+			} else if err == nil && !tst.planExpectedOk {
+				t.Fatalf("Expected plan to fail, got plan: %v   env: %#v", plan, tst.env)
+			}
+			t.Logf("plan: %v", plan)
+
+			GCloudCommand = "/bin/echo"
+			err = runConfig(cfg)
+			if err != nil && tst.planExpectedOk {
+				t.Fatalf("plan was expected to be ok, got err: %s", err)
+			} else if err == nil && !tst.planExpectedOk {
+				t.Fatalf("Expected plan to fail, got plan: %v   env: %#v", plan, tst.env)
+			}
+		})
 	}
 }

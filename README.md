@@ -1,11 +1,6 @@
-[![Build Status](https://cloud.drone.io/api/badges/oliver006/drone-cloud-run/status.svg)](https://cloud.drone.io/oliver006/drone-cloud-run) [![Coverage Status](https://coveralls.io/repos/github/oliver006/drone-cloud-run/badge.svg?branch=master)](https://coveralls.io/github/oliver006/drone-cloud-run?branch=master)
+[![Build Status](https://cloud.drone.io/api/badges/oliver006/drone-cloud-run/status.svg)](https://cloud.drone.io/oliver006/drone-cloud-run) [![Coverage Status](https://coveralls.io/repos/github/oliver006/drone-cloud-run/badge.svg)](https://coveralls.io/github/oliver006/drone-cloud-run)
 
-## drone-cloud-run - a Drone.io plugin to deploy images to Google Run
-
-
-
-
-
+## drone-cloud-run - A drone.io plugin to deploy Google Cloud Run containers. 
 
 
 ### Usage
@@ -28,6 +23,9 @@ steps:
       allow_unauthenticated: true
       token:
         from_secret: google_credentials
+      environment:
+        VAR_1: "var01"
+        ANOTHER_ENV_VAR: "env_var_value"
       env_secret_api_key:
         from_secret: api_key_prod
 ```
@@ -56,3 +54,4 @@ steps:
         target: env_secret_api_key
 
 ```
+

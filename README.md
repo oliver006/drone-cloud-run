@@ -21,6 +21,7 @@ steps:
       memory: 512Mi
       region: us-central1
       allow_unauthenticated: true
+      cloud_sql_instances: +instance1,instance2
       token:
         from_secret: google_credentials
       environment:
@@ -54,4 +55,31 @@ steps:
         target: env_secret_api_key
 
 ```
+
+### On CloudSqlInstances
+
+For the `gcloud` flags related to [modifying cloud sql instances](https://cloud.google.com/sdk/gcloud/reference/run/deploy#--add-cloudsql-instances) connected to the service,
+
+```
+
+--add-cloudsql-instances=[CLOUDSQL-INSTANCES,…]
+    Append the given values to the current Cloud SQL instances. 
+--clear-cloudsql-instances
+    Empty the current Cloud SQL instances. 
+--remove-cloudsql-instances=[CLOUDSQL-INSTANCES,…]
+    Remove the given values from the current Cloud SQL instances. 
+--set-cloudsql-instances=[CLOUDSQL-INSTANCES,…]
+    Completely replace the current Cloud SQL instances with the given values. 
+```
+
+we provide a singular field `cloud_sql_update` since you can only set at most one.
+
+To use it, here are some examples:
+
+| arg                             | written as |
+|---------------------------------|------------|
+| --add-cloudsql-instances=a,b,e  | +abc       |
+| --clear-cloudsql-instances      | #          |
+| --remove-cloudsql-instances=a,c | -a,c       |
+| --set-cloudsql-instances=a,d,c  | =a,d,c     |
 

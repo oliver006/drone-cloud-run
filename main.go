@@ -28,6 +28,8 @@ type Config struct {
 	Timeout              string
 	Environment          map[string]string
 	EnvSecrets           []string
+
+	CloudSQLUpdate string
 }
 
 const (
@@ -71,6 +73,7 @@ func parseConfig() (*Config, error) {
 		Concurrency:          os.Getenv("PLUGIN_CONCURRENCY"),
 		Memory:               os.Getenv("PLUGIN_MEMORY"),
 		Timeout:              os.Getenv("PLUGIN_TIMEOUT"),
+		CloudSQLUpdate:       os.Getenv("PLUGIN_CLOUD_SQL_UPDATE"),
 	}
 
 	envStr := os.Getenv("PLUGIN_ENVIRONMENT")
@@ -164,6 +167,21 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 
 		if cfg.Region != "" {
 			args = append(args, "--region", cfg.Region)
+		}
+
+		if cfg.CloudSQLUpdate != "" {
+			switch cfg.CloudSQLUpdate[0] {
+			case '+':
+				args = append(args, "--add-cloud-sql-instances", cfg.CloudSQLUpdate[1:])
+			case '-':
+				args = append(args, "--remove-cloud-sql-instances", cfg.CloudSQLUpdate[1:])
+			case '#':
+				args = append(args, "--clear-cloud-sql-instances")
+			case '=':
+				args = append(args, "--set-cloud-sql-instances", cfg.CloudSQLUpdate[1:])
+			default:
+				return []string{}, fmt.Errorf("cloudsqlupdate improperly formatted: first char != {+-=c}")
+			}
 		}
 
 	default:

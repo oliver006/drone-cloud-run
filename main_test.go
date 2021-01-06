@@ -132,6 +132,7 @@ func TestParseAndRunConfig(t *testing.T) {
 				"PLUGIN_MEMORY":                "128Mi",
 				"PLUGIN_TIMEOUT":               "10s",
 				"PLUGIN_REGION":                "us-central1",
+				"PLUGIN_CLOUD_SQL_UPDATE":      "-my-proj:east2:db2",
 			},
 			cfgExpectedProjectId: "my-project-id",
 			planExpectedOk:       true,

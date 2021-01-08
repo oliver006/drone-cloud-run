@@ -17,10 +17,12 @@ steps:
     settings:
       action: deploy
       service: my-api-service
+      runtime: gke                                              # default=managed
       image: org-name/my-api-service-image
       memory: 512Mi
       region: us-central1
-      allow_unauthenticated: true
+      allow_unauthenticated: true                               # default=false
+      svc_account: 1234-my-svc-account@google.svcaccount.com    
       token:
         from_secret: google_credentials
       environment:
@@ -47,6 +49,7 @@ steps:
     memory: 512Mi
     region: us-central1
     allow_unauthenticated: true
+    svc_account: 1234-my-svc-account@google.svcaccount.com
     secrets:
       - source: google_credentials
         target: token

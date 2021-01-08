@@ -14,12 +14,19 @@ import (
 )
 
 type Config struct {
-	Action  string
-	Dir     string
-	Project string
-	Region  string
-	Token   string
+	Action string
+	Dir    string
 
+	// deployment service account token
+	Token string
+
+	// cloud run runtime info
+	Runtime    string
+	Project    string
+	Region     string
+	SvcAccount string
+
+	// deployed service config
 	ServiceName          string
 	ImageName            string
 	AllowUnauthenticated bool
@@ -59,11 +66,13 @@ func getProjectFromToken(token string) string {
 
 func parseConfig() (*Config, error) {
 	cfg := Config{
-		Dir:     filepath.Join(os.Getenv("DRONE_WORKSPACE"), os.Getenv("PLUGIN_DIR")),
-		Action:  os.Getenv("PLUGIN_ACTION"),
-		Project: os.Getenv("PLUGIN_PROJECT"),
-		Region:  os.Getenv("PLUGIN_REGION"),
-		Token:   os.Getenv("PLUGIN_TOKEN"),
+		Dir:        filepath.Join(os.Getenv("DRONE_WORKSPACE"), os.Getenv("PLUGIN_DIR")),
+		Action:     os.Getenv("PLUGIN_ACTION"),
+		Runtime:    os.Getenv("PLUGIN_RUNTIME"),
+		Project:    os.Getenv("PLUGIN_PROJECT"),
+		Region:     os.Getenv("PLUGIN_REGION"),
+		SvcAccount: os.Getenv("PLUGIN_SVC_ACCOUNT"),
+		Token:      os.Getenv("PLUGIN_TOKEN"),
 
 		ServiceName:          os.Getenv("PLUGIN_SERVICE"),
 		ImageName:            os.Getenv("PLUGIN_IMAGE"),
@@ -90,6 +99,9 @@ func parseConfig() (*Config, error) {
 
 	if cfg.Action == "" {
 		return nil, fmt.Errorf("Missing action")
+	}
+	if cfg.Runtime == "" {
+		cfg.Runtime = "managed"
 	}
 	if cfg.ServiceName == "" {
 		return nil, fmt.Errorf("Missing service name")
@@ -132,9 +144,11 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		args = append(args, cfg.ServiceName)
 		args = append(args, "--image", cfg.ImageName)
 		args = append(args, "--project", cfg.Project)
+		args = append(args, "--platform", cfg.Runtime)
 
-		// todo: make this configurable
-		args = append(args, "--platform", "managed")
+		if cfg.SvcAccount != "" {
+			args = append(args, "--service-account", cfg.SvcAccount)
+		}
 
 		if len(cfg.EnvSecrets) > 0 || len(cfg.Environment) > 0 {
 			e := make([]string, len(cfg.EnvSecrets))

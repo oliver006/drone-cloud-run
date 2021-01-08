@@ -125,6 +125,7 @@ func TestParseAndRunConfig(t *testing.T) {
 			env: map[string]string{
 				"PLUGIN_ACTION":                "deploy",
 				"PLUGIN_TOKEN":                 validGCPKey,
+				"PLUGIN_SVC_ACCOUNT":           "1234-my-service-acct@account.com",
 				"PLUGIN_SERVICE":               "my-service",
 				"PLUGIN_IMAGE":                 "my-image",
 				"PLUGIN_ALLOW_UNAUTHENTICATED": "true",

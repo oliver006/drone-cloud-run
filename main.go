@@ -36,7 +36,7 @@ type Config struct {
 	Environment          map[string]string
 	EnvSecrets           []string
 
-	AdditionalFlags 	 map[string]string
+	AdditionalFlags map[string]string
 }
 
 const (
@@ -189,7 +189,7 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		}
 
 		for flg, argStr := range cfg.AdditionalFlags {
-			args = append(args, "--" + flg, argStr)
+			args = append(args, "--"+flg, argStr)
 		}
 
 	default:

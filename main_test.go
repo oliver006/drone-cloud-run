@@ -223,6 +223,14 @@ func TestParseAndRunConfig(t *testing.T) {
 			cfgExpectedProjectId: "my-project-id",
 			planExpectedFlags:    []string{"--add-cloud-sql-instances=instance1,instance2", "--clear-config-maps"},
 		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_ADDL_FLAGS": `{"impossible-structure`},
+			cfgExpectedOk:        false,
+			cfgExpectedProjectId: "my-project-id",
+		},
 	} {
 		name := fmt.Sprintf("env:[%s]", tst.env)
 		t.Run(name, func(t *testing.T) {

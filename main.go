@@ -94,6 +94,7 @@ func parseConfig() (*Config, error) {
 	if err := json.Unmarshal([]byte(addlFlagsStr), &cfg.AdditionalFlags); err != nil && addlFlagsStr != "" {
 		log.Printf("json.Unmarshal() err: %s", err)
 		log.Printf("os.Getenv(PLUGIN_ADDL_FLAGS): %s", envStr)
+		return nil, fmt.Errorf("failed to parse additional flags: [%s]", err)
 	}
 
 	PluginEnvSecretPrefix := "PLUGIN_ENV_SECRET_"

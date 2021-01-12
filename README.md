@@ -21,7 +21,8 @@ steps:
       memory: 512Mi
       region: us-central1
       allow_unauthenticated: true
-      cloud_sql_instances: +instance1,instance2
+      addl_flags: 
+        add-cloud-sql-instances: instance1,instance2
       token:
         from_secret: google_credentials
       environment:
@@ -48,6 +49,8 @@ steps:
     memory: 512Mi
     region: us-central1
     allow_unauthenticated: true
+    addl_flags:
+      clear-cloudsql-instances: ''
     secrets:
       - source: google_credentials
         target: token
@@ -56,30 +59,13 @@ steps:
 
 ```
 
-### On CloudSqlInstances
 
-For the `gcloud` flags related to [modifying cloud sql instances](https://cloud.google.com/sdk/gcloud/reference/run/deploy#--add-cloudsql-instances) connected to the service,
+## On Additional Flags
 
-```
+To be flexible with respect to flags that the `gcloud` command can accept, you
+can use `addl_flags` in your drone setup settings. Use the flags are they're described
+in the [documentation](https://cloud.google.com/sdk/gcloud/reference/run/deploy) without
+the prefix `--` (eg. `--set-config-maps` becomes `set-config-maps`). If the flag doesn't
+require any arguments, use `''` as the value.
 
---add-cloudsql-instances=[CLOUDSQL-INSTANCES,…]
-    Append the given values to the current Cloud SQL instances. 
---clear-cloudsql-instances
-    Empty the current Cloud SQL instances. 
---remove-cloudsql-instances=[CLOUDSQL-INSTANCES,…]
-    Remove the given values from the current Cloud SQL instances. 
---set-cloudsql-instances=[CLOUDSQL-INSTANCES,…]
-    Completely replace the current Cloud SQL instances with the given values. 
-```
-
-we provide a singular field `cloud_sql_update` since you can only set at most one.
-
-To use it, here are some examples:
-
-| arg                             | written as |
-|---------------------------------|------------|
-| --add-cloudsql-instances=a,b,e  | +abc       |
-| --clear-cloudsql-instances      | #          |
-| --remove-cloudsql-instances=a,c | -a,c       |
-| --set-cloudsql-instances=a,d,c  | =a,d,c     |
 

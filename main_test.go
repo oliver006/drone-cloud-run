@@ -217,7 +217,7 @@ func TestParseAndRunConfig(t *testing.T) {
 			env: map[string]string{
 				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
 				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
-				"PLUGIN_ADDL_FLAGS": `{"add-cloud-sql-instances": "instance1,instance2", "clear-config-maps": ""}`},
+				"PLUGIN_ADDL_FLAGS": `{"add-cloud-sql-instances":"instance1,instance2","clear-config-maps":""}`},
 			cfgExpectedOk:        true,
 			planExpectedOk:       true,
 			cfgExpectedProjectId: "my-project-id",

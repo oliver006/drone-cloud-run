@@ -189,7 +189,11 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		}
 
 		for flg, argStr := range cfg.AdditionalFlags {
-			args = append(args, "--"+flg, argStr)
+			if argStr != "" {
+				args = append(args, fmt.Sprintf("--%s=%s", flg, argStr))
+			} else {
+				args = append(args, fmt.Sprintf("--%s", flg))
+			}
 		}
 
 	default:

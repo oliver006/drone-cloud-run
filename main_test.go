@@ -89,6 +89,7 @@ func TestParseAndRunConfig(t *testing.T) {
 		cfgExpectedEnvSecrets []string
 		cfgExpectedEnvKeys    []string
 		planExpectedOk        bool
+		planExpectedFlags     []string
 	}{
 		{
 			cfgExpectedOk:        true,
@@ -115,7 +116,7 @@ func TestParseAndRunConfig(t *testing.T) {
 			cfgExpectedOk:        true,
 			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENVIRONMENT": `    `, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
 			cfgExpectedProjectId: "my-project-id",
-			cfgExpectedEnvKeys:   []string{"VAR_1=var01", "VERSION=d0c13cb8646875cf94387f0d3de4e92b85eee3b0"},
+			cfgExpectedEnvKeys:   []string{},
 			planExpectedOk:       true,
 		},
 
@@ -133,10 +134,11 @@ func TestParseAndRunConfig(t *testing.T) {
 				"PLUGIN_MEMORY":                "128Mi",
 				"PLUGIN_TIMEOUT":               "10s",
 				"PLUGIN_REGION":                "us-central1",
-				"PLUGIN_CLOUD_SQL_UPDATE":      "-my-proj:east2:db2",
+				"PLUGIN_ADDL_FLAGS":            `{"remove-cloudsql-instances":"my-proj:east2:db2"}`,
 			},
 			cfgExpectedProjectId: "my-project-id",
 			planExpectedOk:       true,
+			planExpectedFlags:    []string{"--remove-cloudsql-instances=my-proj:east2:db2"},
 		},
 
 		// parses ok but action is unknown
@@ -215,19 +217,11 @@ func TestParseAndRunConfig(t *testing.T) {
 			env: map[string]string{
 				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
 				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
-				"PLUGIN_CLOUD_SQL_UPDATE": "doesnt-start-with-modifier"},
+				"PLUGIN_ADDL_FLAGS": `{"add-cloud-sql-instances": "instance1,instance2", "clear-config-maps": ""}`},
 			cfgExpectedOk:        true,
-			planExpectedOk:       false,
+			planExpectedOk:       true,
 			cfgExpectedProjectId: "my-project-id",
-		},
-		{
-			env: map[string]string{
-				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
-				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
-				"PLUGIN_CLOUD_SQL_UPDATE": "&wrong-modifier"},
-			cfgExpectedOk:        true,
-			planExpectedOk:       false,
-			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"--add-cloud-sql-instances=instance1,instance2", "--clear-config-maps"},
 		},
 	} {
 		name := fmt.Sprintf("env:[%s]", tst.env)
@@ -284,6 +278,19 @@ func TestParseAndRunConfig(t *testing.T) {
 				t.Fatalf("Expected plan to fail, got plan: %v   env: %#v", plan, tst.env)
 			}
 			t.Logf("plan: %v", plan)
+
+			for _, flg := range tst.planExpectedFlags {
+				found := false
+				for _, pflg := range plan {
+					if pflg == flg {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("couldn't find expected flag [%s] in [%v]", flg, plan)
+				}
+			}
 
 			GCloudCommand = "/bin/echo"
 			err = runConfig(cfg)

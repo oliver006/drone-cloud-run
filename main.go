@@ -93,7 +93,7 @@ func parseConfig() (*Config, error) {
 	addlFlagsStr := os.Getenv("PLUGIN_ADDL_FLAGS")
 	if err := json.Unmarshal([]byte(addlFlagsStr), &cfg.AdditionalFlags); err != nil && addlFlagsStr != "" {
 		log.Printf("json.Unmarshal() err: %s", err)
-		log.Printf("os.Getenv(PLUGIN_ADDL_FLAGS): %s", envStr)
+		log.Printf("os.Getenv(PLUGIN_ADDL_FLAGS): %s", addlFlagsStr)
 		return nil, fmt.Errorf("failed to parse additional flags: [%s]", err)
 	}
 

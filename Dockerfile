@@ -1,4 +1,4 @@
-FROM golang:1.13 as builder
+FROM golang:1.15 as builder
 WORKDIR /go/src/github.com/oliver006/drone-cloud-run
 
 ARG SHA1

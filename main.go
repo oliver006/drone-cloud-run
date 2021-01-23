@@ -35,6 +35,8 @@ type Config struct {
 	Timeout              string
 	Environment          map[string]string
 	EnvSecrets           []string
+
+	AdditionalFlags map[string]string
 }
 
 const (
@@ -86,6 +88,13 @@ func parseConfig() (*Config, error) {
 	if err := json.Unmarshal([]byte(envStr), &cfg.Environment); err != nil && envStr != "" {
 		log.Printf("json.Unmarshal() err: %s", err)
 		log.Printf("os.Getenv(PLUGIN_ENVIRONMENT): %s", envStr)
+	}
+
+	addlFlagsStr := os.Getenv("PLUGIN_ADDL_FLAGS")
+	if err := json.Unmarshal([]byte(addlFlagsStr), &cfg.AdditionalFlags); err != nil && addlFlagsStr != "" {
+		log.Printf("json.Unmarshal() err: %s", err)
+		log.Printf("os.Getenv(PLUGIN_ADDL_FLAGS): %s", addlFlagsStr)
+		return nil, fmt.Errorf("failed to parse additional flags: [%s]", err)
 	}
 
 	PluginEnvSecretPrefix := "PLUGIN_ENV_SECRET_"
@@ -178,6 +187,14 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 
 		if cfg.Region != "" {
 			args = append(args, "--region", cfg.Region)
+		}
+
+		for flg, argStr := range cfg.AdditionalFlags {
+			if argStr != "" {
+				args = append(args, fmt.Sprintf("--%s=%s", flg, argStr))
+			} else {
+				args = append(args, fmt.Sprintf("--%s", flg))
+			}
 		}
 
 	default:

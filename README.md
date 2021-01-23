@@ -22,7 +22,9 @@ steps:
       memory: 512Mi
       region: us-central1
       allow_unauthenticated: true                               # default=false
-      svc_account: 1234-my-svc-account@google.svcaccount.com    
+      svc_account: 1234-my-svc-account@google.svcaccount.com 
+      addl_flags: 
+        add-cloud-sql-instances: instance1,instance2
       token:
         from_secret: google_credentials
       environment:
@@ -50,6 +52,8 @@ steps:
     region: us-central1
     allow_unauthenticated: true
     svc_account: 1234-my-svc-account@google.svcaccount.com
+    addl_flags:
+        clear-cloudsql-instances: ''
     secrets:
       - source: google_credentials
         target: token
@@ -57,4 +61,14 @@ steps:
         target: env_secret_api_key
 
 ```
+
+
+## On Additional Flags
+
+To be flexible with respect to flags that the `gcloud` command can accept, you
+can use `addl_flags` in your drone setup settings. Use the flags are they're described
+in the [documentation](https://cloud.google.com/sdk/gcloud/reference/run/deploy) without
+the prefix `--` (eg. `--set-config-maps` becomes `set-config-maps`). If the flag doesn't
+require any arguments, use `''` as the value.
+
 

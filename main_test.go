@@ -231,6 +231,15 @@ func TestParseAndRunConfig(t *testing.T) {
 			cfgExpectedOk:        false,
 			cfgExpectedProjectId: "my-project-id",
 		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_ALPHA": "true"},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+		},
 	} {
 		name := fmt.Sprintf("env:[%s]", tst.env)
 		t.Run(name, func(t *testing.T) {
@@ -286,6 +295,10 @@ func TestParseAndRunConfig(t *testing.T) {
 				t.Fatalf("Expected plan to fail, got plan: %v   env: %#v", plan, tst.env)
 			}
 			t.Logf("plan: %v", plan)
+
+			if cfg.Alpha && plan[1] != "alpha" {
+				t.Fatal("execution plan should contain \"alpha\"")
+			}
 
 			for _, flg := range tst.planExpectedFlags {
 				found := false

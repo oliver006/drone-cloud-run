@@ -25,6 +25,7 @@ type Config struct {
 	Project    string
 	Region     string
 	SvcAccount string
+	Alpha      bool
 
 	// deployed service config
 	ServiceName          string
@@ -75,6 +76,7 @@ func parseConfig() (*Config, error) {
 		Region:     os.Getenv("PLUGIN_REGION"),
 		SvcAccount: os.Getenv("PLUGIN_SVC_ACCOUNT"),
 		Token:      os.Getenv("PLUGIN_TOKEN"),
+		Alpha:      os.Getenv("PLUGIN_ALPHA") == "true",
 
 		ServiceName:          os.Getenv("PLUGIN_SERVICE"),
 		ImageName:            os.Getenv("PLUGIN_IMAGE"),
@@ -144,8 +146,14 @@ func parseConfig() (*Config, error) {
 func CreateExecutionPlan(cfg *Config) ([]string, error) {
 	args := []string{
 		"--quiet",
-		"run",
 	}
+
+	if cfg.Alpha {
+		args = append(args, "alpha")
+	}
+
+	args = append(args, "run")
+
 	switch cfg.Action {
 	case "deploy":
 		args = append(args, "deploy")

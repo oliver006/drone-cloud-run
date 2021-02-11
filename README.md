@@ -20,7 +20,7 @@ steps:
       runtime: gke                                              # default=managed
       image: org-name/my-api-service-image
       memory: 512Mi
-      alpha: false                                              # use "gcloud alpha run" features, default=false
+      variant: alpha                                            # uses "gcloud alpha run" command variant, default=<empty string>. Other supported variant is beta.
       region: us-central1
       allow_unauthenticated: true                               # default=false
       svc_account: 1234-my-svc-account@google.svcaccount.com 

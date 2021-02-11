@@ -192,6 +192,10 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 			args = append(args, "--memory", cfg.Memory)
 		}
 
+		if cfg.Timeout != "" {
+			args = append(args, "--timeout", cfg.Timeout)
+		}
+
 		if cfg.Region != "" {
 			args = append(args, "--region", cfg.Region)
 		}

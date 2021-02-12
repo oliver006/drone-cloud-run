@@ -38,6 +38,7 @@ type Config struct {
 	EnvSecrets           []string
 
 	AdditionalFlags map[string]string
+	UpdateTraffic   map[string]string
 }
 
 const (
@@ -99,6 +100,13 @@ func parseConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse additional flags: [%s]", err)
 	}
 
+	updateTrafficStr := os.Getenv("PLUGIN_UPDATE_TRAFFIC")
+	if err := json.Unmarshal([]byte(updateTrafficStr), &cfg.UpdateTraffic); err != nil && updateTrafficStr != "" {
+		log.Printf("json.Unmarshal() err: %s", err)
+		log.Printf("os.Getenv(PLUGIN_UPDATE_TRAFFIC): %s", updateTrafficStr)
+		return nil, fmt.Errorf("failed to parse update traffic command: [%s]", err)
+	}
+
 	PluginEnvSecretPrefix := "PLUGIN_ENV_SECRET_"
 	for _, e := range os.Environ() {
 		if s := strings.SplitN(e, "=", 2); len(s) > 0 && strings.HasPrefix(s[0], PluginEnvSecretPrefix) {
@@ -143,6 +151,29 @@ func parseConfig() (*Config, error) {
 	return &cfg, nil
 }
 
+// Returns a list of arguments allowed for most run commands,
+// based on Config:
+// * --project
+// * --platform
+// * --region
+func CreateServiceScope(cfg *Config) ([]string, error) {
+	args := []string{}
+
+	if cfg.Project != "" {
+		args = append(args, "--project="+cfg.Project)
+	}
+
+	if cfg.Runtime != "" {
+		args = append(args, "--platform="+cfg.Runtime)
+	}
+
+	if cfg.Region != "" {
+		args = append(args, "--region="+cfg.Region)
+	}
+
+	return args, nil
+}
+
 func CreateExecutionPlan(cfg *Config) ([]string, error) {
 	args := []string{
 		"--quiet",
@@ -159,8 +190,6 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		args = append(args, "deploy")
 		args = append(args, cfg.ServiceName)
 		args = append(args, "--image", cfg.ImageName)
-		args = append(args, "--project", cfg.Project)
-		args = append(args, "--platform", cfg.Runtime)
 
 		if cfg.SvcAccount != "" {
 			args = append(args, "--service-account", cfg.SvcAccount)
@@ -196,10 +225,6 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 			args = append(args, "--timeout", cfg.Timeout)
 		}
 
-		if cfg.Region != "" {
-			args = append(args, "--region", cfg.Region)
-		}
-
 		for flg, argStr := range cfg.AdditionalFlags {
 			if argStr != "" {
 				args = append(args, fmt.Sprintf("--%s=%s", flg, argStr))
@@ -215,8 +240,31 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 	return args, nil
 }
 
-func ExecutePlan(e *Env, plan []string) error {
-	if err := e.Run(GCloudCommand, plan...); err != nil {
+func CreateUpdateTrafficPlan(cfg *Config) ([]string, error) {
+	args := []string{
+		"--quiet",
+	}
+
+	if cfg.Variant != "" && (cfg.Variant == "alpha" || cfg.Variant == "beta") {
+		args = append(args, cfg.Variant)
+	}
+
+	args = append(args, "run")
+
+	for flg, argStr := range cfg.UpdateTraffic {
+		if argStr != "" {
+			args = append(args, fmt.Sprintf("--%s=%s", flg, argStr))
+		} else {
+			args = append(args, fmt.Sprintf("--%s", flg))
+		}
+	}
+
+	return args, nil
+}
+
+func ExecutePlan(e *Env, plan []string, scope []string) error {
+	args := append(plan, scope...)
+	if err := e.Run(GCloudCommand, args...); err != nil {
 		return fmt.Errorf("error: %s\n", err)
 	}
 
@@ -224,7 +272,15 @@ func ExecutePlan(e *Env, plan []string) error {
 }
 
 func runConfig(cfg *Config) error {
+	scope, err := CreateServiceScope(cfg)
+	if err != nil {
+		return err
+	}
 	plan, err := CreateExecutionPlan(cfg)
+	if err != nil {
+		return err
+	}
+	trafficPlan, err := CreateUpdateTrafficPlan(cfg)
 	if err != nil {
 		return err
 	}
@@ -237,7 +293,15 @@ func runConfig(cfg *Config) error {
 		return err
 	}
 
-	return ExecutePlan(e, plan)
+	if err := ExecutePlan(e, plan, scope); err != nil {
+		return err
+	}
+
+	if len(cfg.UpdateTraffic) > 0 {
+		return ExecutePlan(e, trafficPlan, scope)
+	}
+
+	return nil
 }
 
 type Env struct {

@@ -151,30 +151,7 @@ func parseConfig() (*Config, error) {
 	return &cfg, nil
 }
 
-// Returns a list of arguments allowed for most run commands,
-// based on Config:
-// * --project
-// * --platform
-// * --region
-func CreateServiceScope(cfg *Config) ([]string, error) {
-	args := []string{}
-
-	if cfg.Project != "" {
-		args = append(args, "--project="+cfg.Project)
-	}
-
-	if cfg.Runtime != "" {
-		args = append(args, "--platform="+cfg.Runtime)
-	}
-
-	if cfg.Region != "" {
-		args = append(args, "--region="+cfg.Region)
-	}
-
-	return args, nil
-}
-
-func CreateExecutionPlan(cfg *Config, scope []string) ([]string, error) {
+func CreateExecutionPlan(cfg *Config) ([]string, error) {
 	args := []string{
 		"--quiet",
 	}
@@ -190,6 +167,8 @@ func CreateExecutionPlan(cfg *Config, scope []string) ([]string, error) {
 		args = append(args, "deploy")
 		args = append(args, cfg.ServiceName)
 		args = append(args, "--image", cfg.ImageName)
+		args = append(args, "--project=" + cfg.Project)
+		args = append(args, "--platform=" + cfg.Runtime)
 
 		if cfg.SvcAccount != "" {
 			args = append(args, "--service-account", cfg.SvcAccount)
@@ -225,6 +204,10 @@ func CreateExecutionPlan(cfg *Config, scope []string) ([]string, error) {
 			args = append(args, "--timeout", cfg.Timeout)
 		}
 
+		if cfg.Region != "" {
+			args = append(args, "--region=" + cfg.Region)
+		}
+
 		for flg, argStr := range cfg.AdditionalFlags {
 			if argStr != "" {
 				args = append(args, fmt.Sprintf("--%s=%s", flg, argStr))
@@ -237,12 +220,10 @@ func CreateExecutionPlan(cfg *Config, scope []string) ([]string, error) {
 		return []string{}, fmt.Errorf("action: %s not implemented yet", cfg.Action)
 	}
 
-	args = append(args, scope...)
-
 	return args, nil
 }
 
-func CreateUpdateTrafficPlan(cfg *Config, scope []string) ([]string, error) {
+func CreateUpdateTrafficPlan(cfg *Config) ([]string, error) {
 	args := []string{
 		"--quiet",
 	}
@@ -253,7 +234,18 @@ func CreateUpdateTrafficPlan(cfg *Config, scope []string) ([]string, error) {
 
 	args = append(args, "services", "update-traffic")
 	args = append(args, cfg.ServiceName)
-	args = append(args, scope...)
+
+	if cfg.Project != "" {
+		args = append(args, "--project="+cfg.Project)
+	}
+
+	if cfg.Runtime != "" {
+		args = append(args, "--platform="+cfg.Runtime)
+	}
+
+	if cfg.Region != "" {
+		args = append(args, "--region="+cfg.Region)
+	}
 
 	for flg, argStr := range cfg.UpdateTraffic {
 		if argStr != "" {
@@ -275,15 +267,11 @@ func ExecutePlan(e *Env, plan []string) error {
 }
 
 func runConfig(cfg *Config) error {
-	scope, err := CreateServiceScope(cfg)
+	plan, err := CreateExecutionPlan(cfg)
 	if err != nil {
 		return err
 	}
-	plan, err := CreateExecutionPlan(cfg, scope)
-	if err != nil {
-		return err
-	}
-	trafficPlan, err := CreateUpdateTrafficPlan(cfg, scope)
+	trafficPlan, err := CreateUpdateTrafficPlan(cfg)
 	if err != nil {
 		return err
 	}

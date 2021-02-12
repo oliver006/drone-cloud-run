@@ -341,12 +341,7 @@ func TestParseAndRunConfig(t *testing.T) {
 				return
 			}
 
-			scope, err := CreateServiceScope(cfg)
-			if err != nil && tst.planExpectedOk {
-				t.Fatalf("plan was expected to be ok, CreateServiceScope got err: %s", err)
-			}
-
-			plan, err := CreateExecutionPlan(cfg, scope)
+			plan, err := CreateExecutionPlan(cfg)
 			if err != nil && tst.planExpectedOk {
 				t.Fatalf("plan was expected to be ok, got err: %s", err)
 			} else if err == nil && !tst.planExpectedOk {
@@ -354,7 +349,7 @@ func TestParseAndRunConfig(t *testing.T) {
 			}
 			t.Logf("plan: %v", plan)
 
-			trafficPlan, err := CreateUpdateTrafficPlan(cfg, scope)
+			trafficPlan, err := CreateUpdateTrafficPlan(cfg)
 			if err != nil && tst.trafficPlanExpectedOk {
 				t.Fatalf("trafficPlan was expected to be ok, got err: %s with plan %s", err, trafficPlan)
 			}

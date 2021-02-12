@@ -19,7 +19,9 @@ steps:
       service: my-api-service
       runtime: gke                                              # default=managed
       image: org-name/my-api-service-image
+      timeout: 10m                                              # google cloud default is 5m
       memory: 512Mi
+      variant: alpha                                            # uses "gcloud alpha run" command variant, default=<empty string>. Other supported variant is beta.
       region: us-central1
       allow_unauthenticated: true                               # default=false
       svc_account: 1234-my-svc-account@google.svcaccount.com 

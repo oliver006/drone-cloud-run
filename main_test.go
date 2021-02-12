@@ -231,6 +231,24 @@ func TestParseAndRunConfig(t *testing.T) {
 			cfgExpectedOk:        false,
 			cfgExpectedProjectId: "my-project-id",
 		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_VARIANT": "alpha"},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_VARIANT": "beta"},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+		},
 	} {
 		name := fmt.Sprintf("env:[%s]", tst.env)
 		t.Run(name, func(t *testing.T) {
@@ -286,6 +304,18 @@ func TestParseAndRunConfig(t *testing.T) {
 				t.Fatalf("Expected plan to fail, got plan: %v   env: %#v", plan, tst.env)
 			}
 			t.Logf("plan: %v", plan)
+
+			if cfg.Variant == "alpha" && plan[1] != "alpha" {
+				t.Fatal("execution plan should contain \"alpha\" for variant=alpha")
+			}
+
+			if cfg.Variant == "beta" && plan[1] != "beta" {
+				t.Fatal("execution plan should contain \"beta\" for variant=beta")
+			}
+
+			if cfg.Variant == "" && len(plan) > 0 && plan[1] != "run" { // len(plan) is 0 for "gcloud version" command test
+				t.Fatal("execution plan shouldn't contain any variant for variant=<empty string>")
+			}
 
 			for _, flg := range tst.planExpectedFlags {
 				found := false

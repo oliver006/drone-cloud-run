@@ -27,6 +27,8 @@ steps:
       svc_account: 1234-my-svc-account@google.svcaccount.com 
       addl_flags: 
         add-cloud-sql-instances: instance1,instance2
+      update_traffic:                                           # if present, flags passed to gcloud run services update-traffic. default=command not run.
+        to-latest: ""
       token:
         from_secret: google_credentials
       environment:

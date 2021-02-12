@@ -269,7 +269,18 @@ func TestParseAndRunConfig(t *testing.T) {
 			cfgExpectedOk:            true,
 			cfgExpectedProjectId:     "my-project-id",
 			trafficPlanExpectedOk:    true,
-			trafficPlanExpectedFlags: []string{"--to-latest"},
+			trafficPlanExpectedFlags: []string{"my-service"},
+		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_UPDATE_TRAFFIC": `{"to-latest":""}`},
+			planExpectedOk:           true,
+			cfgExpectedOk:            true,
+			cfgExpectedProjectId:     "my-project-id",
+			trafficPlanExpectedOk:    true,
+			trafficPlanExpectedFlags: []string{"services", "update-traffic", "--to-latest"},
 		},
 		{
 			env: map[string]string{
@@ -335,21 +346,18 @@ func TestParseAndRunConfig(t *testing.T) {
 				t.Fatalf("plan was expected to be ok, CreateServiceScope got err: %s", err)
 			}
 
-			plan, err := CreateExecutionPlan(cfg)
+			plan, err := CreateExecutionPlan(cfg, scope)
 			if err != nil && tst.planExpectedOk {
 				t.Fatalf("plan was expected to be ok, got err: %s", err)
 			} else if err == nil && !tst.planExpectedOk {
 				t.Fatalf("Expected plan to fail, got plan: %v   env: %#v", plan, tst.env)
 			}
-			t.Logf("env: %#v", tst.env)
-			plan = append(plan, scope...)
 			t.Logf("plan: %v", plan)
 
-			trafficPlan, err := CreateUpdateTrafficPlan(cfg)
+			trafficPlan, err := CreateUpdateTrafficPlan(cfg, scope)
 			if err != nil && tst.trafficPlanExpectedOk {
 				t.Fatalf("trafficPlan was expected to be ok, got err: %s with plan %s", err, trafficPlan)
 			}
-			trafficPlan = append(trafficPlan, scope...)
 			t.Logf("plan: %v", plan)
 
 			if cfg.Variant == "alpha" && plan[1] != "alpha" {

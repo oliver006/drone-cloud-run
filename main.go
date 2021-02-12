@@ -174,7 +174,7 @@ func CreateServiceScope(cfg *Config) ([]string, error) {
 	return args, nil
 }
 
-func CreateExecutionPlan(cfg *Config) ([]string, error) {
+func CreateExecutionPlan(cfg *Config, scope []string) ([]string, error) {
 	args := []string{
 		"--quiet",
 	}
@@ -237,10 +237,12 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		return []string{}, fmt.Errorf("action: %s not implemented yet", cfg.Action)
 	}
 
+	args = append(args, scope...)
+
 	return args, nil
 }
 
-func CreateUpdateTrafficPlan(cfg *Config) ([]string, error) {
+func CreateUpdateTrafficPlan(cfg *Config, scope []string) ([]string, error) {
 	args := []string{
 		"--quiet",
 	}
@@ -249,7 +251,9 @@ func CreateUpdateTrafficPlan(cfg *Config) ([]string, error) {
 		args = append(args, cfg.Variant)
 	}
 
-	args = append(args, "run")
+	args = append(args, "services", "update-traffic")
+	args = append(args, cfg.ServiceName)
+	args = append(args, scope...)
 
 	for flg, argStr := range cfg.UpdateTraffic {
 		if argStr != "" {
@@ -262,9 +266,8 @@ func CreateUpdateTrafficPlan(cfg *Config) ([]string, error) {
 	return args, nil
 }
 
-func ExecutePlan(e *Env, plan []string, scope []string) error {
-	args := append(plan, scope...)
-	if err := e.Run(GCloudCommand, args...); err != nil {
+func ExecutePlan(e *Env, plan []string) error {
+	if err := e.Run(GCloudCommand, plan...); err != nil {
 		return fmt.Errorf("error: %s\n", err)
 	}
 
@@ -276,11 +279,11 @@ func runConfig(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	plan, err := CreateExecutionPlan(cfg)
+	plan, err := CreateExecutionPlan(cfg, scope)
 	if err != nil {
 		return err
 	}
-	trafficPlan, err := CreateUpdateTrafficPlan(cfg)
+	trafficPlan, err := CreateUpdateTrafficPlan(cfg, scope)
 	if err != nil {
 		return err
 	}
@@ -293,12 +296,12 @@ func runConfig(cfg *Config) error {
 		return err
 	}
 
-	if err := ExecutePlan(e, plan, scope); err != nil {
+	if err := ExecutePlan(e, plan); err != nil {
 		return err
 	}
 
 	if len(cfg.UpdateTraffic) > 0 {
-		return ExecutePlan(e, trafficPlan, scope)
+		return ExecutePlan(e, trafficPlan)
 	}
 
 	return nil

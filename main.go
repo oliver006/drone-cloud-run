@@ -120,7 +120,7 @@ func parseConfig() (*Config, error) {
 	if cfg.ImageName == "" {
 		// for Drone v0.8 compat. as 'image' clashes since settings are passed top-level
 		cfg.ImageName = os.Getenv("PLUGIN_DEPLOYMENT_IMAGE")
-		if cfg.ImageName == "" {
+		if cfg.ImageName == "" && cfg.Action == "deploy" {
 			return nil, fmt.Errorf("Missing image/deployment_image name")
 		}
 	}

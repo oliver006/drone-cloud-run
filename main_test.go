@@ -83,15 +83,13 @@ func TestGetProjectFromToken(t *testing.T) {
 
 func TestParseAndRunConfig(t *testing.T) {
 	for _, tst := range []struct {
-		env                      map[string]string
-		cfgExpectedOk            bool
-		cfgExpectedProjectId     string
-		cfgExpectedEnvSecrets    []string
-		cfgExpectedEnvKeys       []string
-		planExpectedOk           bool
-		planExpectedFlags        []string
-		trafficPlanExpectedOk    bool
-		trafficPlanExpectedFlags []string
+		env                   map[string]string
+		cfgExpectedOk         bool
+		cfgExpectedProjectId  string
+		cfgExpectedEnvSecrets []string
+		cfgExpectedEnvKeys    []string
+		planExpectedOk        bool
+		planExpectedFlags     []string
 	}{
 		{
 			cfgExpectedOk:        true,
@@ -141,15 +139,6 @@ func TestParseAndRunConfig(t *testing.T) {
 			cfgExpectedProjectId: "my-project-id",
 			planExpectedOk:       true,
 			planExpectedFlags:    []string{"--remove-cloudsql-instances=my-proj:east2:db2"},
-		},
-
-		// shared flags (platform, project, ...) included in final command
-		{
-			cfgExpectedOk:        true,
-			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image", "PLUGIN_REGION": "us-east1"},
-			cfgExpectedProjectId: "my-project-id",
-			planExpectedOk:       true,
-			planExpectedFlags:    []string{"--project=my-project-id", "--platform=managed", "--region=us-east1"},
 		},
 
 		// parses ok but action is unknown
@@ -262,36 +251,33 @@ func TestParseAndRunConfig(t *testing.T) {
 		},
 		{
 			env: map[string]string{
-				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_ACTION": "update-traffic", "PLUGIN_SERVICE": "my-service",
 				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
-				"PLUGIN_UPDATE_TRAFFIC": `{"to-latest":""}`},
-			planExpectedOk:           true,
-			cfgExpectedOk:            true,
-			cfgExpectedProjectId:     "my-project-id",
-			trafficPlanExpectedOk:    true,
-			trafficPlanExpectedFlags: []string{"my-service"},
+				"PLUGIN_ADDL_FLAGS": `{"to-latest":""}`},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"my-service"},
 		},
 		{
 			env: map[string]string{
-				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_ACTION": "update-traffic", "PLUGIN_SERVICE": "my-service",
 				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
-				"PLUGIN_UPDATE_TRAFFIC": `{"to-latest":""}`},
-			planExpectedOk:           true,
-			cfgExpectedOk:            true,
-			cfgExpectedProjectId:     "my-project-id",
-			trafficPlanExpectedOk:    true,
-			trafficPlanExpectedFlags: []string{"services", "update-traffic", "--to-latest"},
+				"PLUGIN_ADDL_FLAGS": `{"to-latest":""}`},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"services", "update-traffic", "--to-latest"},
 		},
 		{
 			env: map[string]string{
-				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_ACTION": "update-traffic", "PLUGIN_SERVICE": "my-service",
 				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
-				"PLUGIN_UPDATE_TRAFFIC": `{"to-tags":"tag=100"}`},
-			planExpectedOk:           true,
-			cfgExpectedOk:            true,
-			cfgExpectedProjectId:     "my-project-id",
-			trafficPlanExpectedOk:    true,
-			trafficPlanExpectedFlags: []string{"--to-tags=tag=100"},
+				"PLUGIN_ADDL_FLAGS": `{"to-tags":"tag=100"}`},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"--to-tags=tag=100"},
 		},
 	} {
 		name := fmt.Sprintf("env:[%s]", tst.env)
@@ -349,12 +335,6 @@ func TestParseAndRunConfig(t *testing.T) {
 			}
 			t.Logf("plan: %v", plan)
 
-			trafficPlan, err := CreateUpdateTrafficPlan(cfg)
-			if err != nil && tst.trafficPlanExpectedOk {
-				t.Fatalf("trafficPlan was expected to be ok, got err: %s with plan %s", err, trafficPlan)
-			}
-			t.Logf("plan: %v", plan)
-
 			if cfg.Variant == "alpha" && plan[1] != "alpha" {
 				t.Fatal("execution plan should contain \"alpha\" for variant=alpha")
 			}
@@ -363,7 +343,7 @@ func TestParseAndRunConfig(t *testing.T) {
 				t.Fatal("execution plan should contain \"beta\" for variant=beta")
 			}
 
-			if cfg.Variant == "" && len(plan) > 0 && tst.planExpectedOk && plan[1] != "run" { // len(plan) is 0 for "gcloud version" command test
+			if cfg.Variant == "" && len(plan) > 0 && plan[1] != "run" { // len(plan) is 0 for "gcloud version" command test
 				t.Fatal("execution plan shouldn't contain any variant for variant=<empty string>")
 			}
 
@@ -376,20 +356,7 @@ func TestParseAndRunConfig(t *testing.T) {
 					}
 				}
 				if !found {
-					t.Fatalf("couldn't find expected flag [%s] in [%v] for execution plan", flg, plan)
-				}
-			}
-
-			for _, flg := range tst.trafficPlanExpectedFlags {
-				found := false
-				for _, pflg := range trafficPlan {
-					if pflg == flg {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Fatalf("couldn't find expected flag [%s] in [%v] for traffic plan", flg, trafficPlan)
+					t.Fatalf("couldn't find expected flag [%s] in [%v]", flg, plan)
 				}
 			}
 

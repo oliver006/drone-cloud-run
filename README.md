@@ -15,7 +15,7 @@ steps:
     image: oliver006/drone-cloud-run:latest
     pull: always
     settings:
-      action: deploy
+      action: deploy                                            # other actions: update-traffic
       service: my-api-service
       runtime: gke                                              # default=managed
       image: org-name/my-api-service-image
@@ -25,10 +25,8 @@ steps:
       region: us-central1
       allow_unauthenticated: true                               # default=false
       svc_account: 1234-my-svc-account@google.svcaccount.com 
-      addl_flags: 
+      addl_flags:                                               # if present, flags passed to command
         add-cloud-sql-instances: instance1,instance2
-      update_traffic:                                           # if present, flags passed to gcloud run services update-traffic. default=command not run.
-        to-latest: ""
       token:
         from_secret: google_credentials
       environment:

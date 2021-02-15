@@ -15,7 +15,7 @@ steps:
     image: oliver006/drone-cloud-run:latest
     pull: always
     settings:
-      action: deploy
+      action: deploy                                            # other actions: update-traffic
       service: my-api-service
       runtime: gke                                              # default=managed
       image: org-name/my-api-service-image
@@ -25,7 +25,7 @@ steps:
       region: us-central1
       allow_unauthenticated: true                               # default=false
       svc_account: 1234-my-svc-account@google.svcaccount.com 
-      addl_flags: 
+      addl_flags:                                               # if present, flags passed to command
         add-cloud-sql-instances: instance1,instance2
       token:
         from_secret: google_credentials
@@ -64,6 +64,48 @@ steps:
 
 ```
 
+### Updating traffic
+
+You can optionally use the `update-traffic` action to change which revisions
+will receive traffic by passing the [`services update-traffic`](https://cloud.google.com/sdk/gcloud/reference/alpha/run/services/update-traffic)
+command's `--to-latest`, `--to-revisions` or `--to-tags` arguments to `addl_flags`.
+
+See the [Cloud Run traffic routing](https://cloud.google.com/run/docs/rollouts-rollbacks-traffic-migration)
+docs for more information.
+
+```
+kind: pipeline
+name: default
+
+steps:
+  - name: deploy-using-new-drone-plugin-version                 # Same options available as above
+    image: oliver006/drone-cloud-run:latest
+    settings:
+      action: deploy
+      variant: alpha
+      service: my-api-service
+      runtime: gke
+      image: org-name/my-api-service-image
+      region: us-central1
+      addl_flags:
+        no-traffic: ''                                          # Don't route 100% of traffic to this revision by default
+        tag: canary                                             # Human-readable revision name
+      token:
+        from_secret: google_credentials
+
+  - name: update-traffic-using-new-drone-plugin-version
+    image: oliver006/drone-cloud-run:latest
+    settings:
+      action: update-traffic
+      variant: alpha
+      service: my-api-service
+      runtime: gke
+      region: us-central1
+      addl_flags:
+        to-tags: canary=5                                       # One of: to-latest, to-revisions, to-tags (alpha variant only)
+      token:
+        from_secret: google_credentials
+```
 
 ## On Additional Flags
 

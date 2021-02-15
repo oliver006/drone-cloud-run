@@ -249,6 +249,36 @@ func TestParseAndRunConfig(t *testing.T) {
 			cfgExpectedOk:        true,
 			cfgExpectedProjectId: "my-project-id",
 		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "update-traffic", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_ADDL_FLAGS": `{"to-latest":""}`},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"my-service"},
+		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "update-traffic", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_ADDL_FLAGS": `{"to-latest":""}`},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"services", "update-traffic", "--to-latest"},
+		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "update-traffic", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_ADDL_FLAGS": `{"to-tags":"tag=100"}`},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"--to-tags=tag=100"},
+		},
 	} {
 		name := fmt.Sprintf("env:[%s]", tst.env)
 		t.Run(name, func(t *testing.T) {

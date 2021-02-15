@@ -120,7 +120,7 @@ func parseConfig() (*Config, error) {
 	if cfg.ImageName == "" {
 		// for Drone v0.8 compat. as 'image' clashes since settings are passed top-level
 		cfg.ImageName = os.Getenv("PLUGIN_DEPLOYMENT_IMAGE")
-		if cfg.ImageName == "" {
+		if cfg.ImageName == "" && cfg.Action == "deploy" {
 			return nil, fmt.Errorf("Missing image/deployment_image name")
 		}
 	}
@@ -159,8 +159,6 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		args = append(args, "deploy")
 		args = append(args, cfg.ServiceName)
 		args = append(args, "--image", cfg.ImageName)
-		args = append(args, "--project", cfg.Project)
-		args = append(args, "--platform", cfg.Runtime)
 
 		if cfg.SvcAccount != "" {
 			args = append(args, "--service-account", cfg.SvcAccount)
@@ -196,20 +194,27 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 			args = append(args, "--timeout", cfg.Timeout)
 		}
 
-		if cfg.Region != "" {
-			args = append(args, "--region", cfg.Region)
-		}
-
-		for flg, argStr := range cfg.AdditionalFlags {
-			if argStr != "" {
-				args = append(args, fmt.Sprintf("--%s=%s", flg, argStr))
-			} else {
-				args = append(args, fmt.Sprintf("--%s", flg))
-			}
-		}
+	case "update-traffic":
+		args = append(args, "services", "update-traffic")
+		args = append(args, cfg.ServiceName)
 
 	default:
 		return []string{}, fmt.Errorf("action: %s not implemented yet", cfg.Action)
+	}
+
+	args = append(args, "--project", cfg.Project)
+	args = append(args, "--platform", cfg.Runtime)
+
+	if cfg.Region != "" {
+		args = append(args, "--region", cfg.Region)
+	}
+
+	for flg, argStr := range cfg.AdditionalFlags {
+		if argStr != "" {
+			args = append(args, fmt.Sprintf("--%s=%s", flg, argStr))
+		} else {
+			args = append(args, fmt.Sprintf("--%s", flg))
+		}
 	}
 
 	return args, nil

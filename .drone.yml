@@ -7,7 +7,7 @@ workspace:
 
 steps:
   - name: tests
-    image: "golang:1.15"
+    image: "golang:1.16"
     environment:
       COVERALLS_TOKEN:
         from_secret: coveralls-token

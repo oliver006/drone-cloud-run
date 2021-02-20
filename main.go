@@ -236,7 +236,9 @@ func runConfig(cfg *Config) error {
 
 	e := NewEnv(cfg.Dir, os.Environ(), os.Stdout, os.Stderr, false)
 
-	e.Run(GCloudCommand, "version")
+	if err := e.Run(GCloudCommand, "version"); err != nil {
+		return err
+	}
 
 	if err := e.Run(GCloudCommand, "auth", "activate-service-account", "--key-file", TmpTokenFileLocation); err != nil {
 		return err

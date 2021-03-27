@@ -24,6 +24,26 @@ steps:
         - pull_request
 
 
+  - name: test-docker-build
+    image: plugins/docker
+    settings:
+      repo: oliver006/drone-cloud-run
+      tags: "latest"
+      debug: true
+      dry_run: true
+      build_args:
+        - 'TAG=test'
+        - 'SHA1=${DRONE_COMMIT_SHA}'
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      event:
+        - push
+        - pull_request
+
+
   - name: lint
     image: golangci/golangci-lint:latest-alpine
     pull: always

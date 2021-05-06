@@ -278,6 +278,36 @@ func TestParseAndRunConfig(t *testing.T) {
 			cfgExpectedProjectId: "my-project-id",
 			planExpectedFlags:    []string{"--to-tags=tag=100"},
 		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_ALLOW_UNAUTHENTICATED": "true"},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"--allow-unauthenticated"},
+		},
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey,
+				"PLUGIN_ALLOW_UNAUTHENTICATED": "false"},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"--no-allow-unauthenticated"},
+		},
+		// gcloud defaults to --no-allow-unauthenticated if parameter not passed
+		{
+			env: map[string]string{
+				"PLUGIN_ACTION": "deploy", "PLUGIN_SERVICE": "my-service",
+				"PLUGIN_IMAGE": "my-image", "PLUGIN_TOKEN": validGCPKey},
+			planExpectedOk:       true,
+			cfgExpectedOk:        true,
+			cfgExpectedProjectId: "my-project-id",
+			planExpectedFlags:    []string{"--no-allow-unauthenticated"},
+		},
 	} {
 		name := fmt.Sprintf("env:[%s]", tst.env)
 		t.Run(name, func(t *testing.T) {

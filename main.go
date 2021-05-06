@@ -178,8 +178,11 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 			args = append(args, "--set-env-vars", envStr)
 		}
 
+		// If --quiet and none selected, GCP defaults to --no-allow-unauthenticated
 		if cfg.AllowUnauthenticated {
 			args = append(args, "--allow-unauthenticated")
+		} else {
+			args = append(args, "--no-allow-unauthenticated")
 		}
 
 		if cfg.Concurrency != "" {

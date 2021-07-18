@@ -12,7 +12,7 @@ RUN BUILD_DATE=$(date +%F-%T) && CGO_ENABLED=0 GOOS=linux go build -o drone-clou
 RUN ./drone-cloud-run -v
 
 
-FROM       gcr.io/google.com/cloudsdktool/cloud-sdk:333.0.0-slim as release
+FROM       gcr.io/google.com/cloudsdktool/cloud-sdk:348.0.0-slim as release
 RUN        apt-get -y install ca-certificates
 COPY       --from=builder /go/src/github.com/oliver006/drone-cloud-run/drone-cloud-run /bin/drone-cloud-run
 ENTRYPOINT /bin/drone-cloud-run

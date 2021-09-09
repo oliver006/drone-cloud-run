@@ -167,6 +167,9 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		args = append(args, cfg.ServiceName)
 		args = append(args, "--image", cfg.ImageName)
 
+		// we're using ":||:" as the separator for args, let's hope no one puts that in an env or secret variable value
+		sep := ":||:"
+
 		if cfg.SvcAccount != "" {
 			args = append(args, "--service-account", cfg.SvcAccount)
 		}
@@ -178,8 +181,6 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 				e = append(e, fmt.Sprintf(`%s=%s`, k, v))
 			}
 
-			// we're using ":||:" as the separator for the args, let's hope no one puts that in an env variable value
-			sep := ":||:"
 			envStr := strings.Join(e, sep)
 			envStr = "^" + sep + "^" + envStr
 			args = append(args, "--set-env-vars", envStr)
@@ -191,8 +192,6 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 				e = append(e, fmt.Sprintf(`%s=%s`, k, v))
 			}
 
-			// we're using ":||:" as the separator for the args, let's hope no one puts that in an env variable value
-			sep := ":||:"
 			secretsStr := strings.Join(e, sep)
 			secretsStr = "^" + sep + "^" + secretsStr
 			args = append(args, "--set-secrets", secretsStr)

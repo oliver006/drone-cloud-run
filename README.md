@@ -32,6 +32,9 @@ steps:
       environment:
         VAR_1: "var01"
         ANOTHER_ENV_VAR: "env_var_value"
+      secrets:                                                  # set environment variables or file path contents to a Secret Manager secret value
+        MY_SECRET: "my-secret:latest"
+        /mount/path: "mounted-secret:latest"
       env_secret_api_key:
         from_secret: api_key_prod
 ```

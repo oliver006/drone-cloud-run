@@ -132,10 +132,10 @@ func TestParseAndRunConfig(t *testing.T) {
 		// Test exposing secret as file
 		{
 			cfgExpectedOk:        true,
-			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SECRETS": `{"var_1":"/mnt/path:secretname"}`, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SECRETS": `{"/mnt/path":"secretname:1"}`, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
 			cfgExpectedProjectId: "my-project-id",
-			cfgExpectedSecrets:   map[string]string{"var_1": "/mnt/path:secretname"},
-			planExpectedFlags:    []string{"--set-secrets", "^:||:^var_1=/mnt/path:secretname"},
+			cfgExpectedSecrets:   map[string]string{"/mnt/path": "secretname:1"},
+			planExpectedFlags:    []string{"--set-secrets", "^:||:^/mnt/path=secretname:1"},
 			planExpectedOk:       true,
 		},
 

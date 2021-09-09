@@ -39,34 +39,6 @@ steps:
         from_secret: api_key_prod
 ```
 
-For usage in drone v0.8:
-```
-kind: pipeline
-name: default
-
-steps:
-  - name: deploy-using-new-drone-plugin-version
-    image: oliver006/drone-cloud-run:latest
-    pull: always
-
-    # plugin settings are top-level
-    action: deploy
-    service: my-api-service
-    deployment_image: org-name/my-api-service-image
-    memory: 512Mi
-    region: us-central1
-    allow_unauthenticated: true
-    svc_account: 1234-my-svc-account@google.svcaccount.com
-    addl_flags:
-        clear-cloudsql-instances: ''
-    secrets:
-      - source: google_credentials
-        target: token
-      - source: api_key_prod
-        target: env_secret_api_key
-
-```
-
 ### Updating traffic
 
 You can optionally use the `update-traffic` action to change which revisions
@@ -118,4 +90,8 @@ in the [documentation](https://cloud.google.com/sdk/gcloud/reference/run/deploy)
 the prefix `--` (eg. `--set-config-maps` becomes `set-config-maps`). If the flag doesn't
 require any arguments, use `''` as the value.
 
+## Drone version compatibility
 
+Versions `0.3.0` and below of this plugin support `.drone.yml` syntax for either Drone v0.8 or Drone v1.0 and above.
+
+Beginning with the `1.0.0` release, Drone v0.8 is no longer supported. This is due to naming conflicts in the config between configuring [Secret Manager secrets](https://cloud.google.com/run/docs/configuring/secrets) and [Drone Secrets](https://0-8-0.docs.drone.io/manage-secrets/).

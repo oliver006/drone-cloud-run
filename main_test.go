@@ -87,6 +87,7 @@ func TestParseAndRunConfig(t *testing.T) {
 		cfgExpectedProjectId  string
 		cfgExpectedEnvSecrets []string
 		cfgExpectedEnvKeys    []string
+		cfgExpectedSecrets    map[string]string
 		planExpectedOk        bool
 		planExpectedFlags     []string
 	}{
@@ -105,7 +106,7 @@ func TestParseAndRunConfig(t *testing.T) {
 		},
 		{
 			cfgExpectedOk:        true,
-			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENVIRONMENT": `{"var_1":"var01","version":"d0c13cb8646875cf94387f0d3de4e92b85eee3b0"}`, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENVIRONMENT": `{"VAR_1":"var01","VERSION":"d0c13cb8646875cf94387f0d3de4e92b85eee3b0"}`, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
 			cfgExpectedProjectId: "my-project-id",
 			cfgExpectedEnvKeys:   []string{"VAR_1=var01", "VERSION=d0c13cb8646875cf94387f0d3de4e92b85eee3b0"},
 			planExpectedOk:       true,
@@ -116,6 +117,25 @@ func TestParseAndRunConfig(t *testing.T) {
 			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_ENVIRONMENT": `    `, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
 			cfgExpectedProjectId: "my-project-id",
 			cfgExpectedEnvKeys:   []string{},
+			planExpectedOk:       true,
+		},
+
+		// Test exposing secret as environment variable
+		{
+			cfgExpectedOk:        true,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SECRETS": `{"var_1":"secretname:latest"}`, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+			cfgExpectedSecrets:   map[string]string{"var_1": "secretname:latest"},
+			planExpectedFlags:    []string{"--set-secrets", "^:||:^var_1=secretname:latest"},
+			planExpectedOk:       true,
+		},
+		// Test exposing secret as file
+		{
+			cfgExpectedOk:        true,
+			env:                  map[string]string{"PLUGIN_ACTION": "deploy", "PLUGIN_TOKEN": validGCPKey, "PLUGIN_SECRETS": `{"/mnt/path":"secretname:1"}`, "PLUGIN_SERVICE": "my-service", "PLUGIN_IMAGE": "my-image"},
+			cfgExpectedProjectId: "my-project-id",
+			cfgExpectedSecrets:   map[string]string{"/mnt/path": "secretname:1"},
+			planExpectedFlags:    []string{"--set-secrets", "^:||:^/mnt/path=secretname:1"},
 			planExpectedOk:       true,
 		},
 
@@ -349,6 +369,14 @@ func TestParseAndRunConfig(t *testing.T) {
 				}
 				if !found {
 					t.Errorf("missing env secret: %s, got: %#v", e, cfg.EnvSecrets)
+				}
+			}
+
+			// for _, e := range tst.cfgExpectedSecrets {
+			for k, v := range tst.cfgExpectedSecrets {
+				found := v == cfg.Secrets[k]
+				if !found {
+					t.Errorf("missing secret: %s=%s, got: %#v", k, v, cfg.Secrets)
 				}
 			}
 

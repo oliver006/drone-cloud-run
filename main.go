@@ -35,6 +35,7 @@ type Config struct {
 	Memory               string
 	Timeout              string
 	Environment          map[string]string
+	Secrets              map[string]string
 	EnvSecrets           []string
 
 	AdditionalFlags map[string]string
@@ -90,6 +91,12 @@ func parseConfig() (*Config, error) {
 	if err := json.Unmarshal([]byte(envStr), &cfg.Environment); err != nil && envStr != "" {
 		log.Printf("json.Unmarshal() err: %s", err)
 		log.Printf("os.Getenv(PLUGIN_ENVIRONMENT): %s", envStr)
+	}
+
+	secretsStr := os.Getenv("PLUGIN_SECRETS")
+	if err := json.Unmarshal([]byte(secretsStr), &cfg.Secrets); err != nil && secretsStr != "" {
+		log.Printf("json.Unmarshal() err: %s", err)
+		log.Printf("os.Getenv(PLUGIN_SECRETS): %s", secretsStr)
 	}
 
 	addlFlagsStr := os.Getenv("PLUGIN_ADDL_FLAGS")
@@ -160,6 +167,9 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 		args = append(args, cfg.ServiceName)
 		args = append(args, "--image", cfg.ImageName)
 
+		// we're using ":||:" as the separator for args, let's hope no one puts that in an env or secret variable value
+		sep := ":||:"
+
 		if cfg.SvcAccount != "" {
 			args = append(args, "--service-account", cfg.SvcAccount)
 		}
@@ -171,11 +181,20 @@ func CreateExecutionPlan(cfg *Config) ([]string, error) {
 				e = append(e, fmt.Sprintf(`%s=%s`, k, v))
 			}
 
-			// we're using ":||:" as the separator for the args, let's hope no one puts that in an env variable value
-			sep := ":||:"
 			envStr := strings.Join(e, sep)
 			envStr = "^" + sep + "^" + envStr
 			args = append(args, "--set-env-vars", envStr)
+		}
+
+		if len(cfg.Secrets) > 0 {
+			e := make([]string, 0)
+			for k, v := range cfg.Secrets {
+				e = append(e, fmt.Sprintf(`%s=%s`, k, v))
+			}
+
+			secretsStr := strings.Join(e, sep)
+			secretsStr = "^" + sep + "^" + secretsStr
+			args = append(args, "--set-secrets", secretsStr)
 		}
 
 		// If --quiet and none selected, GCP defaults to --no-allow-unauthenticated

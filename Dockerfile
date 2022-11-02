@@ -13,5 +13,6 @@ RUN ./drone-cloud-run -v
 
 FROM       gcr.io/google.com/cloudsdktool/cloud-sdk:405.0.0-alpine as release
 RUN        apk --no-cache add ca-certificates
+RUN        gcloud components install alpha beta
 COPY       --from=builder /go/src/github.com/oliver006/drone-cloud-run/drone-cloud-run /bin/drone-cloud-run
 ENTRYPOINT /bin/drone-cloud-run
